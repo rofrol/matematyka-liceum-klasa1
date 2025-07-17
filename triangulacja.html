@@ -180,6 +180,12 @@
         // AC ma kąt alfa w radianach względem AB
         const arcRadius = 30;
         drawAngleArc(A, 0, pointC.alfa, arcRadius);
+        currentState.A = A;
+        currentState.B = B;
+        currentState.C = C;
+        currentState.scale = scale;
+        currentState.margin = margin;
+
         ctx.fillStyle = "red";
         ctx.font = "18px Arial";
         ctx.fillText("α", A.x + arcRadius + 5, A.y - 5);
@@ -208,8 +214,11 @@
         const wynik = triangulacja(c, alfa, beta);
         if (wynik) {
           drawScene(c, alfa, beta, wynik);
-          document.getElementById("wynik").textContent =
-            `Współrzędne punktu C: x = ${wynik.x.toFixed(2)} m, y = ${wynik.y.toFixed(2)} m`;
+          const wynikDiv = document.getElementById("wynik");
+          wynikDiv.innerHTML = `
+  <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
+  <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
+`;
         }
       };
 
@@ -241,6 +250,86 @@
             drawScene(c, alfa, beta, wynik);
           }
         });
+      });
+
+      let dragging = false;
+      let draggedPoint = null;
+      let currentState = {
+        A: { x: 0, y: 0 },
+        B: { x: 0, y: 0 },
+        C: { x: 0, y: 0 },
+        scale: 1,
+        margin: 50,
+      };
+
+      function screenToWorld(x, y) {
+        return {
+          x: (x - currentState.margin) / currentState.scale,
+          y: (canvas.height - currentState.margin - y) / currentState.scale,
+        };
+      }
+
+      canvas.addEventListener("mousedown", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const dist = (p) => Math.hypot(p.x - mx, p.y - my);
+
+        if (dist(currentState.C) < 10) {
+          dragging = true;
+          draggedPoint = "C";
+        }
+      });
+
+      canvas.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        if (draggedPoint === "C") {
+          // Przelicz C w układzie rzeczywistym (metry)
+          const world = screenToWorld(mx, my);
+          const Cx = world.x;
+          const Cy = world.y;
+
+          const A = { x: 0, y: 0 };
+          const B = {
+            x: parseFloat(document.getElementById("odlegloscAB").value) || 1000,
+            y: 0,
+          };
+
+          const a = Math.hypot(B.x - Cx, B.y - Cy); // BC
+          const b = Math.hypot(Cx - A.x, Cy - A.y); // AC
+          const c = B.x - A.x;
+
+          const alfa = Math.acos((b ** 2 + c ** 2 - a ** 2) / (2 * b * c));
+          const beta = Math.acos((a ** 2 + c ** 2 - b ** 2) / (2 * a * c));
+
+          const alfaDeg = (alfa * 180) / Math.PI;
+          const betaDeg = (beta * 180) / Math.PI;
+
+          // Ustaw wartości inputów
+          document.getElementById("katAlfa").value = alfaDeg.toFixed(2);
+          document.getElementById("katBeta").value = betaDeg.toFixed(2);
+
+          // Ponowne przeliczenie i rysowanie
+          const wynik = triangulacja(c, alfaDeg, betaDeg);
+          if (wynik) {
+            document.getElementById("wynik").innerHTML = `
+        <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
+        <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
+      `;
+            drawScene(c, alfaDeg, betaDeg, wynik);
+          }
+        }
+      });
+
+      canvas.addEventListener("mouseup", () => {
+        dragging = false;
+        draggedPoint = null;
       });
     </script>
   </body>
