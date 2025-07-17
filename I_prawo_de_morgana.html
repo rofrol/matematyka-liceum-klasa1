@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>I prawo de Morgana – przykład</title>
+    <style>
+      #nextButton {
+        padding: 10px 20px;
+        font-size: 1rem;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Zaznacz dwa poniższe pola, aby ukryć przycisk "Dalej":</p>
+
+    <label>
+      <input type="checkbox" id="confirmAge" /> Potwierdzam, że mam ukończone 18
+      lat </label
+    ><br />
+
+    <label>
+      <input type="checkbox" id="acceptTerms" /> Akceptuję regulamin </label
+    ><br /><br />
+
+    <button id="nextButton">Dalej</button>
+
+    <script>
+      const confirmAge = document.getElementById("confirmAge");
+      const acceptTerms = document.getElementById("acceptTerms");
+      const nextButton = document.getElementById("nextButton");
+
+      function updateButtonVisibility() {
+        // I prawo de Morgana: !(p ∧ q) ≡ !p ∨ !q
+        // if (!(confirmAge.checked && acceptTerms.checked)) {
+        if (!confirmAge.checked || !acceptTerms.checked) {
+          nextButton.disabled = true; // blokuj jeśli któreś z pól nie jest zaznaczone
+        } else {
+          nextButton.disabled = false; // odblokuj, gdy oba zaznaczone
+        }
+      }
+
+      confirmAge.addEventListener("change", updateButtonVisibility);
+      acceptTerms.addEventListener("change", updateButtonVisibility);
+
+      // Uruchom na starcie
+      updateButtonVisibility();
+    </script>
+  </body>
+</html>

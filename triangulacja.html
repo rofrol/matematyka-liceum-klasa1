@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Triangulacja - obliczanie położenia punktu</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 400px;
+        margin: auto;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+      }
+      input[type="number"] {
+        width: 100%;
+        padding: 5px;
+        margin-top: 5px;
+      }
+      button {
+        margin-top: 15px;
+        padding: 10px;
+        width: 100%;
+      }
+      #wynik {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Triangulacja</h1>
+    <p>Wpisz dane i oblicz współrzędne punktu C.</p>
+
+    <form id="triangulacjaForm">
+      <label>
+        Odległość AB (m):
+        <input
+          type="number"
+          id="odlegloscAB"
+          value="1000"
+          min="0"
+          step="any"
+          required
+        />
+      </label>
+
+      <label>
+        Kąt α przy punkcie A (stopnie):
+        <input
+          type="number"
+          id="katAlfa"
+          value="30"
+          min="0"
+          max="180"
+          step="any"
+          required
+        />
+      </label>
+
+      <label>
+        Kąt β przy punkcie B (stopnie):
+        <input
+          type="number"
+          id="katBeta"
+          value="45"
+          min="0"
+          max="180"
+          step="any"
+          required
+        />
+      </label>
+
+      <button type="submit">Oblicz</button>
+    </form>
+
+    <div id="wynik"></div>
+
+    <script>
+      function triangulacja(c, alfaDeg, betaDeg) {
+        const alfa = (alfaDeg * Math.PI) / 180;
+        const beta = (betaDeg * Math.PI) / 180;
+        const gamma = Math.PI - alfa - beta;
+
+        if (gamma <= 0) {
+          return null; // Błędne kąty, suma > 180°
+        }
+
+        const a = (c * Math.sin(alfa)) / Math.sin(gamma);
+        const b = (c * Math.sin(beta)) / Math.sin(gamma);
+
+        const xC = b * Math.cos(alfa);
+        const yC = b * Math.sin(alfa);
+
+        return { x: xC, y: yC };
+      }
+
+      document
+        .getElementById("triangulacjaForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const c = parseFloat(document.getElementById("odlegloscAB").value);
+          const alfa = parseFloat(document.getElementById("katAlfa").value);
+          const beta = parseFloat(document.getElementById("katBeta").value);
+
+          const wynik = triangulacja(c, alfa, beta);
+
+          const wynikDiv = document.getElementById("wynik");
+          if (!wynik) {
+            wynikDiv.textContent =
+              "Błędne kąty! Suma α i β musi być mniejsza niż 180°.";
+          } else {
+            wynikDiv.textContent = `Współrzędne punktu C: x = ${wynik.x.toFixed(2)} m, y = ${wynik.y.toFixed(2)} m`;
+          }
+        });
+    </script>
+  </body>
+</html>

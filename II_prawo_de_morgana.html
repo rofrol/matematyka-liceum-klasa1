@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wybór metody kontaktu</title>
+    <style>
+      #info {
+        padding: 10px;
+        background-color: #eef5ff;
+        border: 1px solid #99c;
+        margin-top: 10px;
+        color: #334;
+        font-size: 0.95em;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Wybierz przynajmniej jedną metodę kontaktu:</p>
+
+    <label>
+      <input type="checkbox" id="emailCheckbox" /> Kontakt przez e-mail
+    </label>
+    <br />
+    <label>
+      <input type="checkbox" id="phoneCheckbox" /> Kontakt telefoniczny
+    </label>
+    <br /><br />
+
+    <div id="info">
+      ℹ️ Podaj przynajmniej jedną formę kontaktu: e-mail lub telefon.
+    </div>
+
+    <script>
+      const emailCheckbox = document.getElementById("emailCheckbox");
+      const phoneCheckbox = document.getElementById("phoneCheckbox");
+      const info = document.getElementById("info");
+
+      function updateInfo() {
+        const email = emailCheckbox.checked;
+        const phone = phoneCheckbox.checked;
+
+        // II prawo de Morgana: !(p ∨ q) ≡ !p ∧ !q
+        // if (!email && !phone) {
+        if (!(email || phone)) {
+          info.style.display = "block";
+        } else {
+          info.style.display = "none";
+        }
+      }
+
+      emailCheckbox.addEventListener("change", updateInfo);
+      phoneCheckbox.addEventListener("change", updateInfo);
+
+      // 🔧 Sprawdzenie po załadowaniu strony
+      updateInfo();
+    </script>
+  </body>
+</html>

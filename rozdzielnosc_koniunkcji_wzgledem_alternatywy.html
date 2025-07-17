@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>I prawo de Morgana – przykład</title>
+    <style>
+      #nextButton {
+        padding: 10px 20px;
+        font-size: 1rem;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <form>
+      <label><input type="checkbox" id="p" /> P</label><br />
+      <label><input type="checkbox" id="q" /> Q</label><br />
+      <label><input type="checkbox" id="r" /> R</label><br />
+
+      <button id="submitButton" disabled>Wyślij</button>
+    </form>
+
+    <script>
+      const p = document.getElementById("p");
+      const q = document.getElementById("q");
+      const r = document.getElementById("r");
+      const submitButton = document.getElementById("submitButton");
+
+      function updateButton() {
+        // lewe wyrażenie: p && (q || r)
+        const left = p.checked && (q.checked || r.checked);
+
+        // prawe wyrażenie: (p && q) || (p && r)
+        const right = (p.checked && q.checked) || (p.checked && r.checked);
+
+        // Prawo rozdzielności mówi, że left === right zawsze
+        console.log("left:", left, "right:", right, "equal?", left === right);
+
+        // Włączamy przycisk, jeśli lewa strona jest prawdziwa (również prawa będzie prawdziwa)
+        submitButton.disabled = !left;
+      }
+
+      p.addEventListener("change", updateButton);
+      q.addEventListener("change", updateButton);
+      r.addEventListener("change", updateButton);
+
+      updateButton();
+    </script>
+  </body>
+</html>
