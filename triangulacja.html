@@ -92,212 +92,16 @@
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
 
-      function triangulacja(c, alfaDeg, betaDeg) {
-        const alfa = (alfaDeg * Math.PI) / 180;
-        const beta = (betaDeg * Math.PI) / 180;
-        const gamma = Math.PI - alfa - beta;
-
-        if (gamma <= 0) return null;
-
-        const a = (c * Math.sin(alfa)) / Math.sin(gamma); // BC
-        const b = (c * Math.sin(beta)) / Math.sin(gamma); // AC
-
-        const xC = b * Math.cos(alfa);
-        const yC = b * Math.sin(alfa);
-
-        return { x: xC, y: yC, a, b, alfa, beta, gamma };
-      }
-
-      function drawScene(c, alfaDeg, betaDeg, pointC) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Ustawienia skalowania i marginesy
-        const margin = 50;
-        // Skalujemy odległości, żeby mieściły się na canvasie
-        const scale = Math.min(
-          (canvas.width - 2 * margin) / c,
-          (canvas.height - 2 * margin) / c,
-        );
-
-        // Punkty w układzie canvas (y odwrócone)
-        const A = { x: margin, y: canvas.height - margin };
-        const B = { x: margin + c * scale, y: canvas.height - margin };
-        const C = {
-          x: margin + pointC.x * scale,
-          y: canvas.height - margin - pointC.y * scale,
-        };
-
-        // Funkcja rysująca punkt
-        function drawPoint(pt, label) {
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "blue";
-          ctx.fill();
-          ctx.font = "16px Arial";
-          ctx.fillStyle = "black";
-          ctx.fillText(label, pt.x + 8, pt.y - 8);
-        }
-
-        // Funkcja rysująca linię
-        function drawLine(p1, p2, color = "black") {
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
-        // Funkcja rysująca łuk kąta
-        function drawAngleArc(
-          center,
-          startAngle,
-          endAngle,
-          radius,
-          color = "red",
-        ) {
-          ctx.beginPath();
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2;
-          ctx.arc(center.x, center.y, radius, startAngle, endAngle);
-          ctx.stroke();
-        }
-
-        // Rysujemy trójkąt ABC
-        drawLine(A, B);
-        drawLine(A, C);
-        drawLine(B, C);
-
-        // Rysujemy punkty A, B, C
-        drawPoint(A, "A");
-        drawPoint(B, "B");
-        drawPoint(C, "C");
-
-        // Rysujemy kąty α i β jako łuki i opisy
-
-        // Kąt α przy A (między AB i AC)
-        // AB leży na osi X w prawo, czyli od 0 radianów,
-        // AC ma kąt alfa w radianach względem AB
-        const arcRadius = 30;
-        drawAngleArc(A, 0, pointC.alfa, arcRadius);
-        currentState.A = A;
-        currentState.B = B;
-        currentState.C = C;
-        currentState.scale = scale;
-        currentState.margin = margin;
-
-        ctx.fillStyle = "red";
-        ctx.font = "18px Arial";
-        ctx.fillText("α", A.x + arcRadius + 5, A.y - 5);
-
-        // Kąt β przy B (między BA i BC)
-        // BA jest od B do A: na osi X w lewo, czyli kąt π,
-        // BC ma kąt beta od BA, więc łuk od π do π - beta (odwrotnie, bo y odwrócone)
-        // Trzeba uwzględnić, że na canvasie oś Y jest "do góry" - y maleje w górę
-
-        // Kąt β rysujemy od π do π - beta (czyli na lewo od osi X)
-        // Ale ponieważ y jest odwrócone w canvasie, trzeba zmienić kierunek łuku
-
-        // Obliczamy start i end dla łuku kąta β przy B:
-        const betaStart = Math.PI;
-        const betaEnd = Math.PI - pointC.beta;
-
-        drawAngleArc(B, betaEnd, betaStart, arcRadius);
-        ctx.fillText("β", B.x - arcRadius - 20, B.y - 5);
-
-        // Rysuj długości AC i BC
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-
-        // Środek odcinka AC
-        const midAC = {
-          x: (A.x + C.x) / 2,
-          y: (A.y + C.y) / 2,
-        };
-
-        drawLabelWithBackground(
-          `${pointC.b.toFixed(2)} m`,
-          midAC.x + 5,
-          midAC.y - 5,
-        );
-
-        // Środek odcinka BC
-        const midBC = {
-          x: (B.x + C.x) / 2,
-          y: (B.y + C.y) / 2,
-        };
-
-        drawLabelWithBackground(
-          `${pointC.a.toFixed(2)} m`,
-          midBC.x + 5,
-          midBC.y - 5,
-        );
-      }
-
-      function drawLabelWithBackground(text, x, y) {
-        const padding = 4;
-        const metrics = ctx.measureText(text);
-        const textHeight = 16;
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillRect(
-          x - padding,
-          y - textHeight + padding,
-          metrics.width + 2 * padding,
-          textHeight,
-        );
-
-        ctx.fillStyle = "black";
-        ctx.fillText(text, x, y);
-      }
-
-      // Rysujemy scenę przy pierwszym ładowaniu z domyślnymi wartościami
-      window.onload = () => {
-        const c = parseFloat(document.getElementById("odlegloscAB").value);
-        const alfa = parseFloat(document.getElementById("katAlfa").value);
-        const beta = parseFloat(document.getElementById("katBeta").value);
-        const wynik = triangulacja(c, alfa, beta);
-        if (wynik) {
-          drawScene(c, alfa, beta, wynik);
-        }
-      };
-
-      const inputs = ["odlegloscAB", "katAlfa", "katBeta"].map((id) =>
-        document.getElementById(id),
-      );
-
-      inputs.forEach((input) => {
-        input.addEventListener("input", () => {
-          const c = parseFloat(document.getElementById("odlegloscAB").value);
-          const alfa = parseFloat(document.getElementById("katAlfa").value);
-          const beta = parseFloat(document.getElementById("katBeta").value);
-
-          // Walidacja — nie pozwól na NaN
-          if (isNaN(c) || isNaN(alfa) || isNaN(beta)) return;
-
-          const wynik = triangulacja(c, alfa, beta);
-          const wynikDiv = document.getElementById("wynik");
-
-          if (!wynik) {
-            wynikDiv.textContent =
-              "Błędne kąty! Suma α i β musi być mniejsza niż 180°.";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          } else {
-            drawScene(c, alfa, beta, wynik);
-          }
-        });
-      });
-
       let dragging = false;
       let draggedPoint = null;
-      let currentState = {
-        A: { x: 0, y: 0 },
-        B: { x: 0, y: 0 },
-        C: { x: 0, y: 0 },
-        scale: 1,
-        margin: 50,
+      let pointC = null;
+
+      const currentState = {
+        scale: 0.3,
+        margin: 40,
       };
 
+      // Konwersja między współrzędnymi
       function screenToWorld(x, y) {
         return {
           x: (x - currentState.margin) / currentState.scale,
@@ -305,28 +109,122 @@
         };
       }
 
+      function worldToScreen(x, y) {
+        return {
+          x: currentState.margin + x * currentState.scale,
+          y: canvas.height - currentState.margin - y * currentState.scale,
+        };
+      }
+
+      // Triangulacja na podstawie długości AB i kątów
+      function triangulacja(c, alfaDeg, betaDeg) {
+        const alfa = (alfaDeg * Math.PI) / 180;
+        const beta = (betaDeg * Math.PI) / 180;
+
+        const a = (Math.sin(beta) * c) / Math.sin(alfa + beta);
+        const b = (Math.sin(alfa) * c) / Math.sin(alfa + beta);
+
+        const Cx = a * Math.cos(alfa);
+        const Cy = a * Math.sin(alfa);
+
+        return { x: Cx, y: Cy };
+      }
+
+      // Rysowanie sceny
+      function drawScene(c, alfaDeg, betaDeg, C) {
+        pointC = C; // aktualizujemy globalną zmienną
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const A = { x: 0, y: 0 };
+        const B = { x: c, y: 0 };
+
+        const As = worldToScreen(A.x, A.y);
+        const Bs = worldToScreen(B.x, B.y);
+        const Cs = worldToScreen(C.x, C.y);
+
+        // Linie
+        ctx.strokeStyle = "#000";
+        ctx.beginPath();
+        ctx.moveTo(As.x, As.y);
+        ctx.lineTo(Bs.x, Bs.y);
+        ctx.lineTo(Cs.x, Cs.y);
+        ctx.lineTo(As.x, As.y);
+        ctx.stroke();
+
+        // Punkty
+        drawPoint(As, "A");
+        drawPoint(Bs, "B");
+        drawPoint(Cs, "C");
+
+        // Odległości
+        drawDistanceMidpoint(As, Cs, "AC");
+        drawDistanceMidpoint(Bs, Cs, "BC");
+      }
+
+      function drawPoint(p, label) {
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText(label, p.x + 8, p.y - 8);
+      }
+
+      function drawDistanceMidpoint(p1, p2, label) {
+        const mx = (p1.x + p2.x) / 2;
+        const my = (p1.y + p2.y) / 2;
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y) / currentState.scale;
+
+        // Tło
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(mx - 20, my - 10, 40, 16);
+
+        ctx.fillStyle = "#00f";
+        ctx.fillText(label + ": " + dist.toFixed(0) + " m", mx - 18, my + 4);
+      }
+
+      // Obsługa myszy
       canvas.addEventListener("mousedown", (e) => {
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
 
-        const dist = (p) => Math.hypot(p.x - mx, p.y - my);
+        if (pointC) {
+          const Cs = worldToScreen(pointC.x, pointC.y);
+          const distance = Math.hypot(mx - Cs.x, my - Cs.y);
 
-        if (dist(currentState.C) < 10) {
-          dragging = true;
-          draggedPoint = "C";
+          if (distance < 10) {
+            dragging = true;
+            draggedPoint = "C";
+            canvas.style.cursor = "grabbing";
+          }
         }
       });
 
-      canvas.addEventListener("mousemove", (e) => {
-        if (!dragging) return;
+      canvas.addEventListener("mouseup", () => {
+        dragging = false;
+        draggedPoint = null;
+        canvas.style.cursor = "default";
+      });
 
+      canvas.addEventListener("mousemove", (e) => {
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
 
+        if (pointC) {
+          const Cs = worldToScreen(pointC.x, pointC.y);
+          const distance = Math.hypot(mx - Cs.x, my - Cs.y);
+          if (distance < 10 || dragging) {
+            canvas.style.cursor = dragging ? "grabbing" : "grab";
+          } else {
+            canvas.style.cursor = "default";
+          }
+        }
+
+        if (!dragging) return;
+
         if (draggedPoint === "C") {
-          // Przelicz C w układzie rzeczywistym (metry)
           const world = screenToWorld(mx, my);
           const Cx = world.x;
           const Cy = world.y;
@@ -347,11 +245,9 @@
           const alfaDeg = (alfa * 180) / Math.PI;
           const betaDeg = (beta * 180) / Math.PI;
 
-          // Ustaw wartości inputów
           document.getElementById("katAlfa").value = alfaDeg.toFixed(2);
           document.getElementById("katBeta").value = betaDeg.toFixed(2);
 
-          // Ponowne przeliczenie i rysowanie
           const wynik = triangulacja(c, alfaDeg, betaDeg);
           if (wynik) {
             drawScene(c, alfaDeg, betaDeg, wynik);
@@ -359,10 +255,32 @@
         }
       });
 
-      canvas.addEventListener("mouseup", () => {
-        dragging = false;
-        draggedPoint = null;
-      });
+      // Inicjalizacja
+      document
+        .getElementById("katAlfa")
+        .addEventListener("input", updateFromInputs);
+      document
+        .getElementById("katBeta")
+        .addEventListener("input", updateFromInputs);
+      document
+        .getElementById("odlegloscAB")
+        .addEventListener("input", updateFromInputs);
+
+      function updateFromInputs() {
+        const c =
+          parseFloat(document.getElementById("odlegloscAB").value) || 1000;
+        const alfaDeg =
+          parseFloat(document.getElementById("katAlfa").value) || 45;
+        const betaDeg =
+          parseFloat(document.getElementById("katBeta").value) || 45;
+        const wynik = triangulacja(c, alfaDeg, betaDeg);
+        if (wynik) {
+          drawScene(c, alfaDeg, betaDeg, wynik);
+        }
+      }
+
+      // Start
+      updateFromInputs();
     </script>
   </body>
 </html>
