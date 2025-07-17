@@ -204,6 +204,51 @@
 
         drawAngleArc(B, betaEnd, betaStart, arcRadius);
         ctx.fillText("β", B.x - arcRadius - 20, B.y - 5);
+
+        // Rysuj długości AC i BC
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+
+        // Środek odcinka AC
+        const midAC = {
+          x: (A.x + C.x) / 2,
+          y: (A.y + C.y) / 2,
+        };
+
+        drawLabelWithBackground(
+          `${pointC.b.toFixed(2)} m`,
+          midAC.x + 5,
+          midAC.y - 5,
+        );
+
+        // Środek odcinka BC
+        const midBC = {
+          x: (B.x + C.x) / 2,
+          y: (B.y + C.y) / 2,
+        };
+
+        drawLabelWithBackground(
+          `${pointC.a.toFixed(2)} m`,
+          midBC.x + 5,
+          midBC.y - 5,
+        );
+      }
+
+      function drawLabelWithBackground(text, x, y) {
+        const padding = 4;
+        const metrics = ctx.measureText(text);
+        const textHeight = 16;
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.fillRect(
+          x - padding,
+          y - textHeight + padding,
+          metrics.width + 2 * padding,
+          textHeight,
+        );
+
+        ctx.fillStyle = "black";
+        ctx.fillText(text, x, y);
       }
 
       // Rysujemy scenę przy pierwszym ładowaniu z domyślnymi wartościami
@@ -214,11 +259,6 @@
         const wynik = triangulacja(c, alfa, beta);
         if (wynik) {
           drawScene(c, alfa, beta, wynik);
-          const wynikDiv = document.getElementById("wynik");
-          wynikDiv.innerHTML = `
-  <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
-  <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
-`;
         }
       };
 
@@ -243,10 +283,6 @@
               "Błędne kąty! Suma α i β musi być mniejsza niż 180°.";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
           } else {
-            wynikDiv.innerHTML = `
-  <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
-  <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
-`;
             drawScene(c, alfa, beta, wynik);
           }
         });
@@ -318,10 +354,6 @@
           // Ponowne przeliczenie i rysowanie
           const wynik = triangulacja(c, alfaDeg, betaDeg);
           if (wynik) {
-            document.getElementById("wynik").innerHTML = `
-        <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
-        <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
-      `;
             drawScene(c, alfaDeg, betaDeg, wynik);
           }
         }
