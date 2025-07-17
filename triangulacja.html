@@ -2,12 +2,12 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>Triangulacja - obliczanie położenia punktu</title>
+    <title>Triangulacja z wizualizacją</title>
     <style>
       body {
         font-family: Arial, sans-serif;
         padding: 20px;
-        max-width: 400px;
+        max-width: 600px;
         margin: auto;
       }
       label {
@@ -28,11 +28,19 @@
         margin-top: 20px;
         font-weight: bold;
       }
+      #canvasContainer {
+        text-align: center;
+        margin-top: 30px;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+      }
     </style>
   </head>
   <body>
-    <h1>Triangulacja</h1>
-    <p>Wpisz dane i oblicz współrzędne punktu C.</p>
+    <h1>Triangulacja z wizualizacją</h1>
+    <p>Wpisz dane i zobacz położenie punktu C oraz kąty.</p>
 
     <form id="triangulacjaForm">
       <label>
@@ -72,50 +80,168 @@
           required
         />
       </label>
-
-      <button type="submit">Oblicz</button>
     </form>
 
     <div id="wynik"></div>
 
+    <div id="canvasContainer">
+      <canvas id="canvas" width="500" height="400"></canvas>
+    </div>
+
     <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
       function triangulacja(c, alfaDeg, betaDeg) {
         const alfa = (alfaDeg * Math.PI) / 180;
         const beta = (betaDeg * Math.PI) / 180;
         const gamma = Math.PI - alfa - beta;
 
-        if (gamma <= 0) {
-          return null; // Błędne kąty, suma > 180°
-        }
+        if (gamma <= 0) return null;
 
-        const a = (c * Math.sin(alfa)) / Math.sin(gamma);
-        const b = (c * Math.sin(beta)) / Math.sin(gamma);
+        const a = (c * Math.sin(alfa)) / Math.sin(gamma); // BC
+        const b = (c * Math.sin(beta)) / Math.sin(gamma); // AC
 
         const xC = b * Math.cos(alfa);
         const yC = b * Math.sin(alfa);
 
-        return { x: xC, y: yC };
+        return { x: xC, y: yC, a, b, alfa, beta, gamma };
       }
 
-      document
-        .getElementById("triangulacjaForm")
-        .addEventListener("submit", function (event) {
-          event.preventDefault();
+      function drawScene(c, alfaDeg, betaDeg, pointC) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Ustawienia skalowania i marginesy
+        const margin = 50;
+        // Skalujemy odległości, żeby mieściły się na canvasie
+        const scale = Math.min(
+          (canvas.width - 2 * margin) / c,
+          (canvas.height - 2 * margin) / c,
+        );
+
+        // Punkty w układzie canvas (y odwrócone)
+        const A = { x: margin, y: canvas.height - margin };
+        const B = { x: margin + c * scale, y: canvas.height - margin };
+        const C = {
+          x: margin + pointC.x * scale,
+          y: canvas.height - margin - pointC.y * scale,
+        };
+
+        // Funkcja rysująca punkt
+        function drawPoint(pt, label) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = "blue";
+          ctx.fill();
+          ctx.font = "16px Arial";
+          ctx.fillStyle = "black";
+          ctx.fillText(label, pt.x + 8, pt.y - 8);
+        }
+
+        // Funkcja rysująca linię
+        function drawLine(p1, p2, color = "black") {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Funkcja rysująca łuk kąta
+        function drawAngleArc(
+          center,
+          startAngle,
+          endAngle,
+          radius,
+          color = "red",
+        ) {
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.arc(center.x, center.y, radius, startAngle, endAngle);
+          ctx.stroke();
+        }
+
+        // Rysujemy trójkąt ABC
+        drawLine(A, B);
+        drawLine(A, C);
+        drawLine(B, C);
+
+        // Rysujemy punkty A, B, C
+        drawPoint(A, "A");
+        drawPoint(B, "B");
+        drawPoint(C, "C");
+
+        // Rysujemy kąty α i β jako łuki i opisy
+
+        // Kąt α przy A (między AB i AC)
+        // AB leży na osi X w prawo, czyli od 0 radianów,
+        // AC ma kąt alfa w radianach względem AB
+        const arcRadius = 30;
+        drawAngleArc(A, 0, pointC.alfa, arcRadius);
+        ctx.fillStyle = "red";
+        ctx.font = "18px Arial";
+        ctx.fillText("α", A.x + arcRadius + 5, A.y - 5);
+
+        // Kąt β przy B (między BA i BC)
+        // BA jest od B do A: na osi X w lewo, czyli kąt π,
+        // BC ma kąt beta od BA, więc łuk od π do π - beta (odwrotnie, bo y odwrócone)
+        // Trzeba uwzględnić, że na canvasie oś Y jest "do góry" - y maleje w górę
+
+        // Kąt β rysujemy od π do π - beta (czyli na lewo od osi X)
+        // Ale ponieważ y jest odwrócone w canvasie, trzeba zmienić kierunek łuku
+
+        // Obliczamy start i end dla łuku kąta β przy B:
+        const betaStart = Math.PI;
+        const betaEnd = Math.PI - pointC.beta;
+
+        drawAngleArc(B, betaEnd, betaStart, arcRadius);
+        ctx.fillText("β", B.x - arcRadius - 20, B.y - 5);
+      }
+
+      // Rysujemy scenę przy pierwszym ładowaniu z domyślnymi wartościami
+      window.onload = () => {
+        const c = parseFloat(document.getElementById("odlegloscAB").value);
+        const alfa = parseFloat(document.getElementById("katAlfa").value);
+        const beta = parseFloat(document.getElementById("katBeta").value);
+        const wynik = triangulacja(c, alfa, beta);
+        if (wynik) {
+          drawScene(c, alfa, beta, wynik);
+          document.getElementById("wynik").textContent =
+            `Współrzędne punktu C: x = ${wynik.x.toFixed(2)} m, y = ${wynik.y.toFixed(2)} m`;
+        }
+      };
+
+      const inputs = ["odlegloscAB", "katAlfa", "katBeta"].map((id) =>
+        document.getElementById(id),
+      );
+
+      inputs.forEach((input) => {
+        input.addEventListener("input", () => {
           const c = parseFloat(document.getElementById("odlegloscAB").value);
           const alfa = parseFloat(document.getElementById("katAlfa").value);
           const beta = parseFloat(document.getElementById("katBeta").value);
 
-          const wynik = triangulacja(c, alfa, beta);
+          // Walidacja — nie pozwól na NaN
+          if (isNaN(c) || isNaN(alfa) || isNaN(beta)) return;
 
+          const wynik = triangulacja(c, alfa, beta);
           const wynikDiv = document.getElementById("wynik");
+
           if (!wynik) {
             wynikDiv.textContent =
               "Błędne kąty! Suma α i β musi być mniejsza niż 180°.";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
           } else {
-            wynikDiv.textContent = `Współrzędne punktu C: x = ${wynik.x.toFixed(2)} m, y = ${wynik.y.toFixed(2)} m`;
+            wynikDiv.innerHTML = `
+  <div>Odległość AC: <strong>${wynik.b.toFixed(2)} m</strong></div>
+  <div>Odległość BC: <strong>${wynik.a.toFixed(2)} m</strong></div>
+`;
+            drawScene(c, alfa, beta, wynik);
           }
         });
+      });
     </script>
   </body>
 </html>
