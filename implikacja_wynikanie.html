@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Formularz kontaktowy</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 600px;
+      }
+      h1 {
+        font-size: 1.4em;
+      }
+      label {
+        display: block;
+        margin: 8px 0;
+      }
+      select,
+      textarea {
+        width: 100%;
+        padding: 6px;
+        margin: 8px 0;
+      }
+      textarea {
+        min-height: 100px;
+      }
+      button {
+        margin-top: 15px;
+        padding: 8px 16px;
+        font-size: 1em;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .hidden {
+        display: none;
+      }
+      .error {
+        color: red;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Formularz kontaktowy</h1>
+
+    <form id="contactForm">
+      <label for="topic">Wybierz temat sprawy:</label>
+      <select id="topic">
+        <option value="">-- wybierz --</option>
+        <option value="reklamacja">Reklamacja</option>
+        <option value="produkt">Pytanie o produkt</option>
+        <option value="inna">Inna sprawa</option>
+      </select>
+
+      <div id="purchaseSection" class="hidden">
+        <label for="purchase">Wybierz zakup do reklamacji:</label>
+        <select id="purchase">
+          <option value="">-- wybierz --</option>
+          <option value="order123">Zamówienie #123 – Laptop</option>
+          <option value="order124">Zamówienie #124 – Słuchawki</option>
+          <option value="order125">Zamówienie #125 – Telefon</option>
+        </select>
+      </div>
+
+      <label for="description">Opisz swoją sprawę:</label>
+      <textarea id="description" placeholder="Wpisz szczegóły..."></textarea>
+
+      <button id="submitBtn" type="submit" disabled>Wyślij</button>
+      <div id="errorMsg" class="error"></div>
+    </form>
+
+    <script>
+      const topic = document.getElementById("topic");
+      const purchaseSection = document.getElementById("purchaseSection");
+      const purchase = document.getElementById("purchase");
+      const description = document.getElementById("description");
+      const submitBtn = document.getElementById("submitBtn");
+      const errorMsg = document.getElementById("errorMsg");
+
+      function validate() {
+        const selectedTopic = topic.value;
+        const isComplaint = selectedTopic === "reklamacja";
+        const hasPurchase = purchase.value !== "";
+        const hasDescription = description.value.trim().length > 0;
+
+        // Musi być wybrany temat, opis oraz (jeśli reklamacja) wybrany zakup
+        const valid =
+          selectedTopic !== "" &&
+          (!isComplaint || hasPurchase) &&
+          hasDescription;
+
+        submitBtn.disabled = !valid;
+        return valid;
+      }
+
+      topic.addEventListener("change", () => {
+        purchaseSection.classList.toggle(
+          "hidden",
+          topic.value !== "reklamacja",
+        );
+        validate();
+      });
+
+      purchase.addEventListener("change", validate);
+      description.addEventListener("input", validate);
+
+      document.getElementById("contactForm").addEventListener("submit", (e) => {
+        if (!validate()) {
+          e.preventDefault();
+          errorMsg.textContent =
+            "Uzupełnij wszystkie wymagane pola (temat, opis, a przy reklamacji – zakup).";
+        } else {
+          errorMsg.textContent = "";
+          alert("Formularz wysłany!");
+        }
+      });
+
+      // Inicjalne ustawienie
+      validate();
+    </script>
+  </body>
+</html>

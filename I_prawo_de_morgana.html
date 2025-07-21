@@ -32,8 +32,9 @@
 
       function updateButtonVisibility() {
         // I prawo de Morgana: !(p ∧ q) ≡ !p ∨ !q
-        // if (!(confirmAge.checked && acceptTerms.checked)) {
+        // if (!(confirmAge.checked && acceptTerms.checked)) { // nie prawda, że oba zaznaczone, to nie pozwalasz przejść
         if (!confirmAge.checked || !acceptTerms.checked) {
+          // pierwsze nie zaznaczone lub drugie nie zaznaczone, to nie pozwalajasz przejść
           nextButton.disabled = true; // blokuj jeśli któreś z pól nie jest zaznaczone
         } else {
           nextButton.disabled = false; // odblokuj, gdy oba zaznaczone

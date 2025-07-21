@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ranking Bayesa</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 400px;
+        margin: auto;
+        padding: 1em;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        padding: 0.5em;
+        border: 1px solid #ccc;
+        margin-bottom: 0.3em;
+        cursor: pointer;
+      }
+      li:hover {
+        background: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Ranking artykułów (kliknij, aby zwiększyć kliknięcia)</h2>
+
+    <ul id="articles">
+      <li data-clicks="5" data-views="10">
+        Artykuł A - Kliknięcia: 5, Wyświetlenia: 10
+      </li>
+      <li data-clicks="2" data-views="8">
+        Artykuł B - Kliknięcia: 2, Wyświetlenia: 8
+      </li>
+      <li data-clicks="0" data-views="3">
+        Artykuł C - Kliknięcia: 0, Wyświetlenia: 3
+      </li>
+      <li data-clicks="7" data-views="20">
+        Artykuł D - Kliknięcia: 7, Wyświetlenia: 20
+      </li>
+    </ul>
+
+    <script>
+      // Priory: np. na podstawie całej strony
+      const P_A = 0.3; // Prawdopodobieństwo, że artykuł jest trafny a priori
+      const P_B_given_A = 0.7; // Prawdopodobieństwo kliknięcia, jeśli artykuł jest trafny
+
+      const list = document.getElementById("articles");
+
+      function bayesRanking() {
+        // Oblicz P(B) - prawdopodobieństwo kliknięcia - na podstawie wszystkich artykułów
+        // sumujemy kliknięcia i wyświetlenia
+        let totalClicks = 0;
+        let totalViews = 0;
+        const items = Array.from(list.children);
+        for (const item of items) {
+          totalClicks += parseInt(item.dataset.clicks);
+          totalViews += parseInt(item.dataset.views);
+        }
+        const P_B = totalClicks / totalViews || 0.01; // zabezpieczenie przed 0
+
+        // Obliczamy P(A|B) dla każdego artykułu i zapisujemy jako dataset
+        items.forEach((item) => {
+          const clicks = parseInt(item.dataset.clicks);
+          const views = parseInt(item.dataset.views);
+          const p_B_given_A = clicks / views || 0; // estymacja kliknięć jeśli trafny
+          // Bayes - dla uproszczenia bierzemy P(B|A) jako p_B_given_A lub przyjmujemy P_B_given_A
+          // Tutaj trochę uproszczenie:
+          const P_A_given_B = (P_B_given_A * P_A) / P_B;
+
+          item.dataset.bayesScore = P_A_given_B;
+        });
+
+        // Sortujemy po bayesScore malejąco
+        items.sort((a, b) => b.dataset.bayesScore - a.dataset.bayesScore);
+
+        // Usuwamy i dodajemy ponownie, aby zmienić kolejność na stronie
+        items.forEach((item) => list.appendChild(item));
+
+        // Odśwież tekst z kliknięciami, wyświetleniami i score
+        items.forEach((item) => {
+          const clicks = item.dataset.clicks;
+          const views = item.dataset.views;
+          const score = Number(item.dataset.bayesScore).toFixed(3);
+          item.textContent = `${item.textContent.split(" - ")[0]} - Kliknięcia: ${clicks}, Wyświetlenia: ${views}, Bayes score: ${score}`;
+        });
+      }
+
+      // Obsługa kliknięcia - zwiększamy liczbę kliknięć i aktualizujemy ranking
+      list.addEventListener("click", (e) => {
+        if (e.target.tagName === "LI") {
+          let clicks = parseInt(e.target.dataset.clicks);
+          let views = parseInt(e.target.dataset.views);
+
+          clicks++;
+          views++; // zakładamy że kliknięcie też jest wyświetleniem
+          e.target.dataset.clicks = clicks;
+          e.target.dataset.views = views;
+
+          bayesRanking();
+        }
+      });
+
+      bayesRanking(); // ranking na start
+    </script>
+  </body>
+</html>

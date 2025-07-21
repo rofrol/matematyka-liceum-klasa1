@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bayesowski ranking – bez suwaka C</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        max-width: 900px;
+        margin: auto;
+      }
+      #topControls {
+        display: grid;
+        grid-template-columns: 220px 320px;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      #miniChartContainer {
+        width: 320px;
+        height: 200px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        display: block;
+        margin-bottom: 40px;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Bayesowski ranking – bez suwaka C</h1>
+
+    <div id="topControls">
+      <div id="sliderMContainer">
+        <label for="mSlider"
+          >Waga globalnej średniej (m) - minimalna liczba ocen potrzebna, by
+          uznać wynik za pewny: <span id="mValue">10</span></label
+        >
+        <input type="range" id="mSlider" min="0" max="100" value="10" />
+      </div>
+      <div id="miniChartContainer">
+        <canvas id="miniChart" width="300" height="180"></canvas>
+        <div style="text-align: center; font-size: 14px; margin-top: 5px">
+          Ocena Bayesa przy C = 10, m = <span id="currentM">10</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>Porównanie ocen miejsc</h2>
+
+    <!-- Legenda -->
+    <div
+      id="legend"
+      style="
+        max-width: 800px;
+        margin: 0 auto 30px;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 6px">
+        <div style="width: 18px; height: 18px; background: orange"></div>
+        Ocena Bayesa
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px">
+        <div style="width: 18px; height: 18px; background: steelblue"></div>
+        Średnia ocena
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px">
+        <div style="width: 18px; height: 18px; background: green"></div>
+        Liczba ocen
+      </div>
+    </div>
+
+    <canvas id="barChart" width="800" height="400"></canvas>
+
+    <script>
+      const places = [
+        { name: "Kawiarnia A", R: 4.8, C: 3 },
+        { name: "Kawiarnia B", R: 4.4, C: 20 },
+        { name: "Kawiarnia C", R: 4.0, C: 60 },
+      ];
+      const R0 = 3.5;
+      const maxRating = 5;
+      const maxCountExtra = 10;
+
+      const barCanvas = document.getElementById("barChart");
+      const barCtx = barCanvas.getContext("2d");
+
+      const miniCanvas = document.getElementById("miniChart");
+      const miniCtx = miniCanvas.getContext("2d");
+
+      const mSlider = document.getElementById("mSlider");
+      const mValueLabel = document.getElementById("mValue");
+      const currentMLabel = document.getElementById("currentM");
+
+      const margin = 50;
+      const chartW = miniCanvas.width - margin * 1.5;
+      const chartH = miniCanvas.height - margin * 1.5;
+
+      function bayesScore(R, C, m, R0) {
+        if (C + m === 0) return 0;
+        return (C * R + m * R0) / (C + m);
+      }
+
+      function drawBarChart(m) {
+        const maxCount = Math.max(...places.map((p) => p.C)) + maxCountExtra;
+        barCtx.clearRect(0, 0, barCanvas.width, barCanvas.height);
+
+        barCtx.strokeStyle = "#000";
+        barCtx.beginPath();
+        barCtx.moveTo(60, 50);
+        barCtx.lineTo(60, 350);
+        barCtx.lineTo(740, 350);
+        barCtx.stroke();
+
+        barCtx.fillStyle = "#000";
+        barCtx.textAlign = "right";
+        for (let i = 1; i <= maxRating; i++) {
+          const y = 350 - (i / maxRating) * 300;
+          barCtx.fillText(i.toFixed(1), 55, y + 4);
+          barCtx.strokeStyle = "#eee";
+          barCtx.beginPath();
+          barCtx.moveTo(60, y);
+          barCtx.lineTo(740, y);
+          barCtx.stroke();
+        }
+
+        barCtx.textAlign = "left";
+        for (let i = 0; i <= maxCount; i += 20) {
+          const y = 350 - (i / maxCount) * 300;
+          barCtx.fillText(i, 745, y + 4);
+        }
+
+        barCtx.fillText("Ocena", 60, 40);
+        barCtx.fillText("Liczba ocen", 740, 40);
+
+        const barWidth = 20;
+        const spacing = 90;
+        places.forEach((p, i) => {
+          const x = 60 + spacing + i * spacing * 2;
+          const bayes = bayesScore(p.R, p.C, m, R0);
+          const hR = (p.R / maxRating) * 300;
+          const hBayes = (bayes / maxRating) * 300;
+          const hC = (p.C / maxCount) * 300;
+
+          barCtx.fillStyle = "steelblue";
+          barCtx.fillRect(x, 350 - hR, barWidth, hR);
+
+          barCtx.fillStyle = "orange";
+          barCtx.fillRect(x + barWidth + 5, 350 - hBayes, barWidth, hBayes);
+
+          barCtx.fillStyle = "green";
+          barCtx.fillRect(x + 2 * (barWidth + 5), 350 - hC, barWidth, hC);
+
+          barCtx.fillStyle = "black";
+          barCtx.textAlign = "center";
+          barCtx.fillText(p.name, x + barWidth + 5, 365);
+        });
+      }
+
+      function drawMiniChart(Cfixed, m) {
+        miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+
+        miniCtx.strokeStyle = "#000";
+        miniCtx.beginPath();
+        miniCtx.moveTo(margin, margin);
+        miniCtx.lineTo(margin, miniCanvas.height - margin / 2);
+        miniCtx.lineTo(
+          miniCanvas.width - margin / 2,
+          miniCanvas.height - margin / 2,
+        );
+        miniCtx.stroke();
+
+        miniCtx.fillStyle = "#000";
+        miniCtx.textAlign = "right";
+        for (let i = 1; i <= maxRating; i++) {
+          const y = miniCanvas.height - margin / 2 - (i / maxRating) * chartH;
+          miniCtx.fillText(i.toFixed(1), margin - 5, y + 4);
+          miniCtx.strokeStyle = "#ddd";
+          miniCtx.beginPath();
+          miniCtx.moveTo(margin, y);
+          miniCtx.lineTo(miniCanvas.width - margin / 2, y);
+          miniCtx.stroke();
+        }
+
+        miniCtx.textAlign = "center";
+        for (let c = 0; c <= 100; c += 20) {
+          const x = margin + (c / 100) * chartW;
+          miniCtx.fillText(c, x, miniCanvas.height - margin / 2 + 15);
+        }
+
+        miniCtx.fillStyle = "black";
+        miniCtx.fillText(
+          "Liczba ocen (C)",
+          miniCanvas.width / 2,
+          miniCanvas.height - 2,
+        );
+        miniCtx.save();
+        miniCtx.translate(15, miniCanvas.height / 2);
+        miniCtx.rotate(-Math.PI / 2);
+        miniCtx.fillText("Ocena Bayesa", 0, 0);
+        miniCtx.restore();
+
+        const Rfixed = 4.8;
+
+        miniCtx.beginPath();
+        miniCtx.strokeStyle = "blue";
+        miniCtx.lineWidth = 2;
+        for (let c = 0; c <= 100; c++) {
+          const bayes = bayesScore(Rfixed, c, m, R0);
+          const x = margin + (c / 100) * chartW;
+          const y =
+            miniCanvas.height - margin / 2 - (bayes / maxRating) * chartH;
+          if (c === 0) miniCtx.moveTo(x, y);
+          else miniCtx.lineTo(x, y);
+        }
+        miniCtx.stroke();
+
+        currentMLabel.textContent = m.toFixed(0);
+      }
+
+      function redrawAll() {
+        const m = Number(mSlider.value);
+        mValueLabel.textContent = m;
+        drawBarChart(m);
+        drawMiniChart(10, m); // C = 10, na stałe
+      }
+
+      mSlider.addEventListener("input", redrawAll);
+      redrawAll();
+    </script>
+  </body>
+</html>

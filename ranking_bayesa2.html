@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ranking miejsc z Bayesowską oceną</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 2em auto;
+        padding: 1em;
+      }
+      h1 {
+        text-align: center;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        border: 1px solid #ccc;
+        margin: 0.5em 0;
+        padding: 0.8em;
+        border-radius: 6px;
+        background: #fafafa;
+        cursor: default;
+      }
+      .rating {
+        font-weight: bold;
+        color: #2a7ae2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ranking miejsc</h1>
+    <p>
+      Sortowanie wg bayesowskiej oceny (ważonej): im więcej ocen, tym większa
+      wiara w średnią.
+    </p>
+
+    <ul id="places">
+      <!-- data-average = średnia ocena, data-count = liczba ocen -->
+      <li data-average="5.0" data-count="1">
+        Miejsce A — średnia: 5.0, ocen: 1
+      </li>
+      <li data-average="4.2" data-count="5">
+        Miejsce B — średnia: 4.2, ocen: 5
+      </li>
+      <li data-average="3.8" data-count="20">
+        Miejsce C — średnia: 3.8, ocen: 20
+      </li>
+      <li data-average="4.5" data-count="3">
+        Miejsce D — średnia: 4.5, ocen: 3
+      </li>
+      <li data-average="4.0" data-count="50">
+        Miejsce E — średnia: 4.0, ocen: 50
+      </li>
+    </ul>
+
+    <script>
+      // Stała C - ile ocen potrzebujemy, żeby "zaufać" średniej
+      const C = 10;
+
+      // Średnia ocena wszystkich miejsc (priorytet)
+      // Liczymy jako średnia ważona wszystkich miejsc
+      function calculateGlobalAverage() {
+        const places = document.querySelectorAll("#places li");
+        let totalScore = 0;
+        let totalCount = 0;
+
+        places.forEach((place) => {
+          const avg = parseFloat(place.dataset.average);
+          const count = parseInt(place.dataset.count);
+          totalScore += avg * count;
+          totalCount += count;
+        });
+
+        return totalCount === 0 ? 0 : totalScore / totalCount;
+      }
+
+      function bayesScore(r, n, m, c) {
+        // r = średnia ocena danego miejsca
+        // n = liczba ocen danego miejsca
+        // m = średnia globalna (priorytet)
+        // c = stała (waga priorytetu)
+        return (c * m + n * r) / (c + n);
+      }
+
+      function updateRanking() {
+        const placesList = document.getElementById("places");
+        const places = Array.from(placesList.querySelectorAll("li"));
+
+        const globalAvg = calculateGlobalAverage();
+
+        // Obliczamy bayesowską ocenę dla każdego miejsca
+        places.forEach((place) => {
+          const avg = parseFloat(place.dataset.average);
+          const count = parseInt(place.dataset.count);
+          const score = bayesScore(avg, count, globalAvg, C);
+          place.dataset.bayesScore = score;
+
+          // Aktualizujemy tekst w elemencie - dodajemy bayesowską ocenę
+          place.textContent = `${place.textContent.split("—")[0].trim()} — średnia: ${avg.toFixed(2)}, ocen: ${count}, bayesowska ocena: ${score.toFixed(3)}`;
+        });
+
+        // Sortujemy miejsca po bayesowskiej ocenie malejąco
+        places.sort(
+          (a, b) =>
+            parseFloat(b.dataset.bayesScore) - parseFloat(a.dataset.bayesScore),
+        );
+
+        // Dodajemy je z powrotem do listy w nowej kolejności
+        places.forEach((place) => placesList.appendChild(place));
+      }
+
+      updateRanking();
+    </script>
+  </body>
+</html>
