@@ -196,6 +196,15 @@
       purchase.addEventListener("change", validate);
       description.addEventListener("input", validate);
 
+      // Poprawka na odświeżenie strony - ustawiamy widoczność i walidację
+      window.addEventListener("load", () => {
+        purchaseSection.classList.toggle(
+          "hidden",
+          topic.value !== "reklamacja",
+        );
+        validate();
+      });
+
       document.getElementById("contactForm").addEventListener("submit", (e) => {
         if (!validate()) {
           e.preventDefault();
