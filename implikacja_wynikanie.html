@@ -175,6 +175,7 @@
         // Jeśli formularz jest w pełni poprawny, dodaj "Wyślij"
         const valid =
           selectedTopic !== "" &&
+          // p⇒q≡(!p)∣∣q
           (!isComplaint || hasPurchase) &&
           hasDescription;
         if (valid) path.push("submit");
