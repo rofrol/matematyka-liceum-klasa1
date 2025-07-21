@@ -2,12 +2,16 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>Formularz kontaktowy</title>
+    <title>Formularz z grafem decyzji</title>
     <style>
       body {
         font-family: Arial, sans-serif;
         padding: 20px;
-        max-width: 600px;
+        display: flex;
+        gap: 40px;
+      }
+      form {
+        flex: 1;
       }
       h1 {
         font-size: 1.4em;
@@ -42,12 +46,45 @@
         color: red;
         margin-top: 10px;
       }
+
+      /* Styl grafu */
+      .decision-graph {
+        flex: 1;
+        min-width: 250px;
+        font-size: 0.9em;
+      }
+      .node {
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 8px;
+        margin: 10px;
+        text-align: center;
+        background: #eee;
+        position: relative;
+      }
+      .active {
+        background: #c7f5c4;
+        border-color: #2d7a2d;
+        font-weight: bold;
+      }
+      .branch {
+        margin-left: 30px;
+      }
+      .line::before {
+        content: "";
+        position: absolute;
+        left: -15px;
+        top: 50%;
+        width: 15px;
+        height: 2px;
+        background: #555;
+      }
     </style>
   </head>
   <body>
-    <h1>Formularz kontaktowy</h1>
-
     <form id="contactForm">
+      <h1>Formularz kontaktowy</h1>
+
       <label for="topic">Wybierz temat sprawy:</label>
       <select id="topic">
         <option value="">-- wybierz --</option>
@@ -73,6 +110,21 @@
       <div id="errorMsg" class="error"></div>
     </form>
 
+    <!-- Graf decyzji -->
+    <div class="decision-graph">
+      <div id="nodeStart" class="node">Start</div>
+      <div class="branch">
+        <div id="nodeComplaint" class="node line">Reklamacja</div>
+        <div class="branch">
+          <div id="nodePurchase" class="node line">Wybór zakupu</div>
+        </div>
+        <div id="nodeProduct" class="node line">Pytanie o produkt</div>
+        <div id="nodeOther" class="node line">Inna sprawa</div>
+      </div>
+      <div id="nodeDescription" class="node">Opis sprawy</div>
+      <div id="nodeSubmit" class="node">Wyślij</div>
+    </div>
+
     <script>
       const topic = document.getElementById("topic");
       const purchaseSection = document.getElementById("purchaseSection");
@@ -81,17 +133,54 @@
       const submitBtn = document.getElementById("submitBtn");
       const errorMsg = document.getElementById("errorMsg");
 
+      const nodes = {
+        start: document.getElementById("nodeStart"),
+        complaint: document.getElementById("nodeComplaint"),
+        purchase: document.getElementById("nodePurchase"),
+        product: document.getElementById("nodeProduct"),
+        other: document.getElementById("nodeOther"),
+        description: document.getElementById("nodeDescription"),
+        submit: document.getElementById("nodeSubmit"),
+      };
+
+      function clearHighlights() {
+        for (const key in nodes) nodes[key].classList.remove("active");
+      }
+
+      function highlightPath(pathKeys) {
+        clearHighlights();
+        pathKeys.forEach((k) => nodes[k]?.classList.add("active"));
+      }
+
       function validate() {
         const selectedTopic = topic.value;
         const isComplaint = selectedTopic === "reklamacja";
         const hasPurchase = purchase.value !== "";
         const hasDescription = description.value.trim().length > 0;
 
-        // Musi być wybrany temat, opis oraz (jeśli reklamacja) wybrany zakup
+        // Budujemy aktualną ścieżkę od Start
+        const path = ["start"];
+
+        if (selectedTopic === "reklamacja") {
+          path.push("complaint");
+          if (hasPurchase) path.push("purchase");
+        } else if (selectedTopic === "produkt") {
+          path.push("product");
+        } else if (selectedTopic === "inna") {
+          path.push("other");
+        }
+
+        if (hasDescription) path.push("description");
+
+        // Jeśli formularz jest w pełni poprawny, dodaj "Wyślij"
         const valid =
           selectedTopic !== "" &&
           (!isComplaint || hasPurchase) &&
           hasDescription;
+        if (valid) path.push("submit");
+
+        // Podświetlenie całej ścieżki
+        highlightPath(path);
 
         submitBtn.disabled = !valid;
         return valid;
@@ -104,23 +193,20 @@
         );
         validate();
       });
-
       purchase.addEventListener("change", validate);
       description.addEventListener("input", validate);
 
       document.getElementById("contactForm").addEventListener("submit", (e) => {
         if (!validate()) {
           e.preventDefault();
-          errorMsg.textContent =
-            "Uzupełnij wszystkie wymagane pola (temat, opis, a przy reklamacji – zakup).";
+          errorMsg.textContent = "Uzupełnij wszystkie wymagane pola.";
         } else {
           errorMsg.textContent = "";
           alert("Formularz wysłany!");
         }
       });
 
-      // Inicjalne ustawienie
-      validate();
+      validate(); // inicjalizacja
     </script>
   </body>
 </html>
